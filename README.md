@@ -4,9 +4,6 @@
 
 Instead of relying solely on historical star ratings, ViralBites uses **Google Gemini 2.5 Flash** equipped with **Search Grounding** and **Google Maps** tools to synthesize a "Viral Score"—aggregating sentiment from TikTok, Instagram, food blogs, and standard reviews in real-time.
 
-![ViralBites Demo](./screenshots/demo-banner.png)
-*(Replace with actual screenshot)*
-
 ## ✨ Key Features
 
 - **🗺️ Interactive Map-First UI**: Seamless exploration with a responsive Leaflet map and synchronized list view.
