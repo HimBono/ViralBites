@@ -1,0 +1,7 @@
+{
+  "name": "ViralBites",
+  "description": "Discover trending and viral food spots in your area with aggregated reviews.",
+  "requestFramePermissions": [
+    "geolocation"
+  ]
+}
