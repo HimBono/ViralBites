@@ -23,7 +23,6 @@ export const searchViralSpots = async (
   filters: SearchFilters
 ): Promise<Place[]> => {
   // Initialize AI client lazily to ensure environment variables are ready and prevent top-level crashes
-  // We use the apiKey from process.env as required
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
   const { query, category, priceRange, openNow } = filters;
@@ -35,7 +34,7 @@ export const searchViralSpots = async (
   const systemInstruction = `
     You are an expert food explorer API.
     Your goal is to find "Viral" and trending food spots.
-    You must return a valid JSON array of objects enclosed in a markdown code block.
+    You must return a valid JSON array of objects.
     
     Each object must strictly follow this structure:
     {
@@ -60,7 +59,7 @@ export const searchViralSpots = async (
     Find 6 to 10 viral, trending, or highly-rated food spots ${locationPrompt} ${categoryPrompt} ${pricePrompt}.
     Prioritize places that are visually aesthetic or famous for a specific dish.
     Use Google Maps to verify locations and Google Search to find "viral" sentiment and ratings from other platforms.
-    Ensure coordinates are accurate.
+    Ensure coordinates are accurate numbers.
   `;
 
   try {
@@ -82,25 +81,35 @@ export const searchViralSpots = async (
     });
 
     const text = response.text;
+    if (!text) {
+        console.warn("Gemini returned empty text");
+        return [];
+    }
     
-    // Extract JSON from markdown code block
-    const jsonMatch = text.match(/```json\n([\s\S]*?)\n```/) || text.match(/```([\s\S]*?)```/) || [null, text];
-    let jsonString = jsonMatch[1] || text;
-    // Clean up any non-json noise if necessary
-    jsonString = jsonString.trim();
+    // Robust extraction: find the first '[' and last ']'
+    const startIndex = text.indexOf('[');
+    const endIndex = text.lastIndexOf(']');
+
+    if (startIndex === -1 || endIndex === -1) {
+        console.error("No JSON array found in Gemini response", text);
+        return [];
+    }
+
+    const jsonString = text.substring(startIndex, endIndex + 1);
 
     try {
       const places: Place[] = JSON.parse(jsonString);
       
       // Post-process to add distance and ensure images
-      return places.map(p => ({
+      return places.map((p, idx) => ({
         ...p,
+        id: p.id || `place-${idx}`, // Fallback ID
         distance: calculateDistance(userLat, userLng, p.latitude, p.longitude),
-        imageUrl: p.imageUrl || `https://picsum.photos/400/300?random=${p.id}`
+        imageUrl: p.imageUrl || `https://picsum.photos/400/300?random=${idx}`
       }));
 
     } catch (e) {
-      console.error("Failed to parse Gemini JSON response", e, text);
+      console.error("Failed to parse Gemini JSON response", e, jsonString);
       return [];
     }
 

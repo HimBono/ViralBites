@@ -4,7 +4,7 @@ import { PlaceCard } from './components/PlaceCard';
 import { PlaceDetail } from './components/PlaceDetail';
 import { Place, SearchFilters, CATEGORIES, PRICE_RANGES } from './types';
 import { searchViralSpots } from './services/gemini';
-import { Search, Compass, Map as MapIcon, List, LocateFixed, Loader2 } from 'lucide-react';
+import { Search, Compass, Map as MapIcon, List, LocateFixed, Loader2, RefreshCw } from 'lucide-react';
 
 const App: React.FC = () => {
   const [places, setPlaces] = useState<Place[]>([]);
@@ -23,6 +23,10 @@ const App: React.FC = () => {
     sortBy: 'trending'
   });
 
+  // Default Location: Kuala Lumpur, Malaysia
+  const DEFAULT_LAT = 3.140853;
+  const DEFAULT_LNG = 101.693207;
+
   // Fetch user location on mount
   useEffect(() => {
     navigator.geolocation.getCurrentPosition(
@@ -32,12 +36,10 @@ const App: React.FC = () => {
         fetchPlaces(latitude, longitude, filters);
       },
       (err) => {
-        console.error(err);
-        // Default to San Francisco if location denied
-        const defaultLat = 37.7749;
-        const defaultLng = -122.4194;
-        setUserLocation({ lat: defaultLat, lng: defaultLng });
-        fetchPlaces(defaultLat, defaultLng, filters);
+        console.warn("Geolocation access denied or failed", err);
+        // Default to KL
+        setUserLocation({ lat: DEFAULT_LAT, lng: DEFAULT_LNG });
+        fetchPlaces(DEFAULT_LAT, DEFAULT_LNG, filters);
       }
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -46,14 +48,16 @@ const App: React.FC = () => {
   const fetchPlaces = async (lat: number, lng: number, currentFilters: SearchFilters) => {
     setLoading(true);
     setError(null);
+    setPlaces([]); // Clear previous places to show loading state clearly
+    
     try {
       const results = await searchViralSpots(lat, lng, currentFilters);
       if (results.length === 0) {
-        setError("No viral spots found. Try adjusting filters.");
+        setError("No viral spots found for this area. Try adjusting filters.");
       }
       setPlaces(results);
     } catch (err) {
-      setError("Failed to fetch places. Please try again.");
+      setError("Failed to fetch places. Please check your connection.");
     } finally {
       setLoading(false);
     }
@@ -74,7 +78,7 @@ const App: React.FC = () => {
       <div className="z-30 bg-white/95 backdrop-blur-sm border-b border-gray-200 px-4 py-3 shadow-sm sticky top-0">
         <div className="max-w-7xl mx-auto flex flex-col gap-3">
             <div className="flex items-center gap-3">
-                 <div className="bg-orange-500 p-2 rounded-lg">
+                 <div className="bg-orange-500 p-2 rounded-lg shrink-0">
                     <Compass className="text-white" size={20} />
                  </div>
                  <h1 className="font-extrabold text-xl tracking-tight text-gray-900 hidden sm:block">
@@ -96,10 +100,12 @@ const App: React.FC = () => {
 
                  <button 
                     onClick={() => {
-                         if (userLocation) fetchPlaces(userLocation.lat, userLocation.lng, filters);
+                         const lat = userLocation?.lat || DEFAULT_LAT;
+                         const lng = userLocation?.lng || DEFAULT_LNG;
+                         fetchPlaces(lat, lng, filters);
                     }}
-                    className="p-2 text-gray-600 hover:bg-gray-100 rounded-full"
-                    title="Refresh near me"
+                    className="p-2 text-gray-600 hover:bg-gray-100 rounded-full shrink-0"
+                    title="Refresh search"
                  >
                     <LocateFixed size={20} />
                  </button>
@@ -126,7 +132,7 @@ const App: React.FC = () => {
                         {cat.label}
                     </button>
                 ))}
-                <div className="w-px h-6 bg-gray-300 mx-1 self-center" />
+                <div className="w-px h-6 bg-gray-300 mx-1 self-center shrink-0" />
                 {PRICE_RANGES.map(price => (
                     <button
                         key={price.id}
@@ -167,11 +173,21 @@ const App: React.FC = () => {
                {loading ? (
                    <div className="flex flex-col items-center justify-center py-20 text-gray-400">
                        <Loader2 className="animate-spin mb-2" size={32} />
-                       <p className="text-sm">Finding viral spots...</p>
+                       <p className="text-sm">Scouting viral spots in Malaysia...</p>
                    </div>
                ) : error ? (
-                   <div className="text-center py-10 text-gray-500 px-4">
-                       <p>{error}</p>
+                   <div className="flex flex-col items-center justify-center py-10 text-gray-500 px-4">
+                       <p className="mb-4 text-center">{error}</p>
+                       <button 
+                         onClick={() => {
+                             const lat = userLocation?.lat || DEFAULT_LAT;
+                             const lng = userLocation?.lng || DEFAULT_LNG;
+                             fetchPlaces(lat, lng, filters);
+                         }}
+                         className="flex items-center gap-2 px-4 py-2 bg-gray-900 text-white rounded-lg text-sm font-medium hover:bg-gray-800"
+                       >
+                           <RefreshCw size={16} /> Try Again
+                       </button>
                    </div>
                ) : (
                    places.map(place => (
@@ -185,7 +201,7 @@ const App: React.FC = () => {
                )}
                {!loading && places.length > 0 && (
                    <div className="text-center text-xs text-gray-400 pb-4 pt-2">
-                       Showing {places.length} viral spots
+                       Found {places.length} trending spots near you
                    </div>
                )}
              </div>
@@ -231,8 +247,22 @@ const App: React.FC = () => {
                               {loading ? (
                                    <div className="flex flex-col items-center justify-center py-20 text-gray-400">
                                        <Loader2 className="animate-spin mb-2" size={32} />
-                                       <p className="text-sm">Finding viral spots...</p>
+                                       <p className="text-sm">Scouting viral spots...</p>
                                    </div>
+                               ) : error ? (
+                                    <div className="flex flex-col items-center justify-center py-10 text-gray-500 px-4">
+                                        <p className="mb-4 text-center">{error}</p>
+                                        <button 
+                                            onClick={() => {
+                                                const lat = userLocation?.lat || DEFAULT_LAT;
+                                                const lng = userLocation?.lng || DEFAULT_LNG;
+                                                fetchPlaces(lat, lng, filters);
+                                            }}
+                                            className="flex items-center gap-2 px-4 py-2 bg-gray-900 text-white rounded-lg text-sm font-medium hover:bg-gray-800"
+                                        >
+                                            <RefreshCw size={16} /> Try Again
+                                        </button>
+                                    </div>
                                ) : (
                                    places.map(place => (
                                        <PlaceCard 
