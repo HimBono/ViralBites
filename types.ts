@@ -1,20 +1,17 @@
 export interface Place {
   id: string;
   name: string;
-  description: string;
+  category: string;
   latitude: number;
   longitude: number;
   address: string;
-  googleRating: number;
-  webRating: number; // Aggregated from other sources like Yelp/TripAdvisor
-  reviewCount: number;
-  priceLevel: 'Cheap' | 'Moderate' | 'Expensive' | 'Luxury';
-  tags: string[];
-  mustTryItem: string;
-  isOpen: boolean;
+  cuisine: string;
+  phone: string;
+  website: string;
+  openingHours: string;
+  distance?: number;
+  osmId: number;
   imageUrl: string;
-  sourceUrl?: string;
-  distance?: number; // Calculated client-side
 }
 
 export interface SearchFilters {
@@ -28,9 +25,9 @@ export interface SearchFilters {
 export const CATEGORIES = [
   { id: 'all', label: 'All', icon: '🍽️' },
   { id: 'street_food', label: 'Street Food', icon: '🌮' },
-  { id: 'cafe', label: 'Viral Cafes', icon: '☕' },
+  { id: 'cafe', label: 'Cafes', icon: '☕' },
   { id: 'dessert', label: 'Desserts', icon: '🍰' },
-  { id: 'fine_dining', label: 'Aesthetics', icon: '✨' },
+  { id: 'fine_dining', label: 'Restaurants', icon: '✨' },
 ];
 
 export const PRICE_RANGES = [
