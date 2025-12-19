@@ -1,6 +1,5 @@
 # ViralBites 🌮🔥
 
-## use your gemini API for it to work
 
 **Discover the hype.** ViralBites is an AI-powered, map-first web application designed to help users discover trending, viral, and "aesthetic" food spots that standard review apps often miss.
 
